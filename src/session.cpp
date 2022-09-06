@@ -49,6 +49,7 @@ using std::vector;
 #define TSVECTOROID 3614
 #define UNKNOWNOID 705
 #define NUMERICOID 1700
+#define TIMESTAMPTZOID 1184
 
 
 namespace quince_postgresql {
@@ -71,6 +72,7 @@ namespace {
             case column_type::string:           return TEXTOID;
             case column_type::numeric_type:     return NUMERICOID;
             case column_type::byte_vector:      return BYTEAOID;
+            case column_type::timestamp_with_tz return TIMESTAMPTZOID;
             case column_type::none:             return VOIDOID;
             default:                            abort();
         }
@@ -79,22 +81,23 @@ namespace {
     column_type
     get_column_type(Oid type_oid)  {
         switch (type_oid) {
-            case BOOLOID:       return column_type::boolean;
-            case INT2OID:       return column_type::small_int;
-            case INT4OID:       return column_type::integer;
-            case INT8OID:       return column_type::big_int;
-            case FLOAT4OID:     return column_type::floating_point;
-            case FLOAT8OID:     return column_type::double_precision;
-            case DATEOID:       return column_type::date_type;
-            case JSONOID:       return column_type::json_type;
-            case JSONBOID:      return column_type::jsonb_type;
-            case TIMEOID:       return column_type::time_type;
-            case TIMESTAMPOID:  return column_type::timestamp;
-            case TEXTOID:       return column_type::string;
-            case NUMERICOID:    return column_type::numeric_type;
-            case BYTEAOID:      return column_type::byte_vector;
-            case VOIDOID:       return column_type::none;
-            default:            throw retrieved_unrecognized_type_exception(type_oid);
+            case BOOLOID:           return column_type::boolean;
+            case INT2OID:           return column_type::small_int;
+            case INT4OID:           return column_type::integer;
+            case INT8OID:           return column_type::big_int;
+            case FLOAT4OID:         return column_type::floating_point;
+            case FLOAT8OID:         return column_type::double_precision;
+            case DATEOID:           return column_type::date_type;
+            case JSONOID:           return column_type::json_type;
+            case JSONBOID:          return column_type::jsonb_type;
+            case TIMEOID:           return column_type::time_type;
+            case TIMESTAMPOID:      return column_type::timestamp;
+            case TEXTOID:           return column_type::string;
+            case NUMERICOID:        return column_type::numeric_type;
+            case BYTEAOID:          return column_type::byte_vector;
+            case TIMESTAMPTZOID:    return column_type::timestamp_with_tz; 
+            case VOIDOID:           return column_type::none;
+            default:                throw retrieved_unrecognized_type_exception(type_oid);
         }
     }
 

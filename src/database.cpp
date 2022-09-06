@@ -183,6 +183,7 @@ namespace {
             customize<json_type, direct_mapper<json_type>>();
             customize<jsonb_type, direct_mapper<jsonb_type>>();
             customize<cpp_dec_float_100, numeric_mapper>();
+            customize<timestamp_with_tz, direct_mapper<timestamp_with_tz>>();
         }
     };
 
@@ -310,6 +311,7 @@ database::column_type_name(column_type type) const {
         case column_type::jsonb_type:       return "jsonb";
         case column_type::numeric_type:     return "numeric";
         case column_type::byte_vector:      return "bytea";
+        case column_type::timestamp_with_tz return "timestamp with timezone";
         default:                            abort();
     }
 }
