@@ -3,11 +3,11 @@
 //    (See accompanying file ../LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/date_time/local_time/local_date_time.hpp>
 #include <pg_config_manual.h>  // for NAMEDATALEN
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
+#include <date/date.h>
+#include <date/tz.h>
 #include <quince/exceptions.h>
 #include <quince/detail/compiler_specific.h>
 #include <quince/detail/session.h>
@@ -20,13 +20,16 @@
 #include <quince/mappers/serial_mapper.h>
 #include <quince_postgresql/database.h>
 #include <quince_postgresql/detail/dialect_sql.h>
+#include <sstream>
+#include <chrono>
+#include <iostream>
+#include <iomanip>
 
 using boost::optional;
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
-using boost::gregorian::date;
 using boost::multiprecision::cpp_dec_float_100;
-using boost::local_time::local_date_time;
+using date::zoned_time;
 using namespace quince;
 using std::dynamic_pointer_cast;
 using std::shared_ptr;
@@ -102,12 +105,12 @@ namespace {
         }
     };
 
-    class date_mapper : public abstract_mapper<date>, public direct_mapper<date_type>
+    class date_mapper : public abstract_mapper<boost::gregorian::date>, public direct_mapper<date_type>
     {
     public:
         explicit date_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
-            abstract_mapper<date>(name),
+            abstract_mapper<boost::gregorian::date>(name),
             direct_mapper<date_type>(name, creator)
         {}
 
@@ -116,20 +119,20 @@ namespace {
             return quince::make_unique<date_mapper>(*this);
         }
 
-        virtual void from_row(const row &src, date&dest) const override {
+        virtual void from_row(const row &src, boost::gregorian::date&dest) const override {
             date_type text;
             direct_mapper<date_type>::from_row(src, text);
             dest = boost::gregorian::from_string(text);
         }
 
-        virtual void to_row(const date &src, row &dest) const override {
+        virtual void to_row(const boost::gregorian::date &src, row &dest) const override {
             const date_type text(boost::gregorian::to_simple_string(src));
             direct_mapper<date_type>::to_row(text, dest);
         }
 
     protected:
         virtual void build_match_tester(const query_base &qb, predicate &result) const override {
-            abstract_mapper<date>::build_match_tester(qb, result);
+            abstract_mapper<boost::gregorian::date>::build_match_tester(qb, result);
         }
     };
 
@@ -164,12 +167,13 @@ namespace {
         }
     };
 
-    class timestamp_with_tz_mapper : public abstract_mapper<local_date_time>, public direct_mapper<timestamp_with_tz>
+    template <typename Duration>
+    class timestamp_with_tz_mapper : public abstract_mapper<zoned_time<Duration>>, public direct_mapper<timestamp_with_tz>
     {
     public:
         explicit timestamp_with_tz_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
-            abstract_mapper<local_date_time>(name),
+            abstract_mapper<zoned_time<Duration>>(name),
             direct_mapper<timestamp_with_tz>(name, creator)
         {}
 
@@ -178,21 +182,34 @@ namespace {
             return quince::make_unique<timestamp_with_tz_mapper>(*this);
         }
 
-        virtual void from_row(const row &src, local_date_time &dest) const override {
+        virtual void from_row(const row &src, zoned_time<Duration> &dest) const override {
             timestamp_with_tz text;
             direct_mapper<timestamp_with_tz>::from_row(src, text);
-            static_cast<const std::string&>(text) >> dest;
+            std::cout << "inside from_row!";
+            std::cout << "the result of casting timestamp_with_tz to a string: " << static_cast<std::string>(text) << "\n";
+            std::stringstream ss(static_cast<const std::string&>(text));
+            std::chrono::sys_time<Duration> time_point;
+            ss >> date::parse("%F %T", time_point);
+
+            std::cout << "the result of parsing to a date::sys_time : ";
+            const std::time_t t_c = std::chrono::system_clock::to_time_t(time_point);
+            std::cout << std::put_time(std::gmtime(&t_c), "%F %T");
+            std::cout << "\n";
+
+            dest = date::make_zoned(time_point);
         }
 
-        virtual void to_row(const local_date_time& src, row &dest) const override {
-            const timestamp_with_tz text;
-            text << src;
+        virtual void to_row(const zoned_time<Duration>& src, row &dest) const override {
+            timestamp_with_tz text;
+            std::stringstream ss;
+            ss << date::format("%F %T %z", src);
+            text = ss.str();
             direct_mapper<timestamp_with_tz>::to_row(text, dest);
         }
 
     protected:
-        virtual void build_match_tester(const query_base &qb, predicate &result) const overried {
-            abstract_mapper<local_date_time>::build_match_tester(qb, result);
+        virtual void build_match_tester(const query_base &qb, predicate &result) const override {
+            abstract_mapper<zoned_time<Duration>>::build_match_tester(qb, result);
         }
     };
 
@@ -214,11 +231,12 @@ namespace {
             customize<serial, serial_mapper>();
             customize<ptime, ptime_mapper>();
             customize<time_duration, time_mapper>();
-            customize<date, date_mapper>();
+            customize<boost::gregorian::date, date_mapper>();
             customize<json_type, direct_mapper<json_type>>();
             customize<jsonb_type, direct_mapper<jsonb_type>>();
             customize<cpp_dec_float_100, numeric_mapper>();
-            customize<timestamp_with_tz, timestamp_with_tz_mapper>();
+            customize<zoned_time<std::chrono::milliseconds>, timestamp_with_tz_mapper<std::chrono::milliseconds>>();
+            customize<zoned_time<std::chrono::microseconds>, timestamp_with_tz_mapper<std::chrono::microseconds>>();
         }
     };
 
