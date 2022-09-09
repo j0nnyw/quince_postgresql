@@ -184,10 +184,12 @@ namespace {
 
         virtual void from_row(const row &src, zoned_time<Duration> &dest) const override {
             timestamp_with_tz text;
-            direct_mapper<timestamp_with_tz>::from_row(src, text);
             std::cout << "inside from_row!";
-            std::cout << "the result of casting timestamp_with_tz to a string: " << static_cast<std::string>(text) << "\n";
-            std::stringstream ss(static_cast<const std::string&>(text));
+            direct_mapper<timestamp_with_tz>::from_row(src, text);
+            
+            std::cout << "the result of casting timestamp_with_tz to a string: " << std::string(text) << "\n";
+            std::stringstream ss;
+            ss << std::string(text);
             std::chrono::sys_time<Duration> time_point;
             ss >> date::parse("%F %T", time_point);
 
