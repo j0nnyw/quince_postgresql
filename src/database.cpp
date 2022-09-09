@@ -22,8 +22,6 @@
 #include <quince_postgresql/detail/dialect_sql.h>
 #include <sstream>
 #include <chrono>
-#include <iostream>
-#include <iomanip>
 
 using boost::optional;
 using boost::posix_time::ptime;
@@ -167,13 +165,13 @@ namespace {
         }
     };
 
-    template <typename Duration>
-    class timestamp_with_tz_mapper : public abstract_mapper<zoned_time<Duration>>, public direct_mapper<timestamp_with_tz>
+    template <typename DurationT>
+    class timestamp_with_tz_mapper : public abstract_mapper<zoned_time<DurationT>>, public direct_mapper<timestamp_with_tz>
     {
     public:
         explicit timestamp_with_tz_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
-            abstract_mapper<zoned_time<Duration>>(name),
+            abstract_mapper<zoned_time<DurationT>>(name),
             direct_mapper<timestamp_with_tz>(name, creator)
         {}
 
@@ -182,26 +180,17 @@ namespace {
             return quince::make_unique<timestamp_with_tz_mapper>(*this);
         }
 
-        virtual void from_row(const row &src, zoned_time<Duration> &dest) const override {
+        virtual void from_row(const row &src, zoned_time<DurationT> &dest) const override {
             timestamp_with_tz text;
-            std::cout << "inside from_row!";
             direct_mapper<timestamp_with_tz>::from_row(src, text);
-            
-            std::cout << "the result of casting timestamp_with_tz to a string: " << std::string(text) << "\n";
             std::stringstream ss;
             ss << std::string(text);
-            std::chrono::sys_time<Duration> time_point;
+            std::chrono::sys_time<DurationT> time_point;
             ss >> date::parse("%F %T", time_point);
-
-            std::cout << "the result of parsing to a date::sys_time : ";
-            const std::time_t t_c = std::chrono::system_clock::to_time_t(time_point);
-            std::cout << std::put_time(std::gmtime(&t_c), "%F %T");
-            std::cout << "\n";
-
             dest = date::make_zoned(time_point);
         }
 
-        virtual void to_row(const zoned_time<Duration>& src, row &dest) const override {
+        virtual void to_row(const zoned_time<DurationT>& src, row &dest) const override {
             timestamp_with_tz text;
             std::stringstream ss;
             ss << date::format("%F %T %z", src);
@@ -211,7 +200,7 @@ namespace {
 
     protected:
         virtual void build_match_tester(const query_base &qb, predicate &result) const override {
-            abstract_mapper<zoned_time<Duration>>::build_match_tester(qb, result);
+            abstract_mapper<zoned_time<DurationT>>::build_match_tester(qb, result);
         }
     };
 
@@ -366,7 +355,7 @@ database::column_type_name(column_type type) const {
         case column_type::jsonb_type:           return "jsonb";
         case column_type::numeric_type:         return "numeric";
         case column_type::byte_vector:          return "bytea";
-        case column_type::timestamp_with_tz:    return "timestamp with timezone";
+        case column_type::timestamp_with_tz:    return "timestamp with time zone";
         default:                            abort();
     }
 }

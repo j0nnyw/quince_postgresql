@@ -139,7 +139,9 @@ namespace {
     is_timestamp_column(const column_mapper &c) {
         return maps_to<timestamp>(c)
             || maps_to<ptime>(c)
+            || maps_to<timestamp_with_tz>(c)
             || maps_to<optional<timestamp>>(c)
+            || maps_to<optional<timestamp_with_tz>>(c)
             || maps_to<optional<ptime>>(c);
     }
 
