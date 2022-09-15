@@ -105,6 +105,7 @@ namespace {
             case ARRAYOFINT2OID:    return column_type::array_of_int16;
             case ARRAYOFINT4OID:    return column_type::array_of_int32;
             case ARRAYOFINT8OID:    return column_type::array_of_int64;
+            case TIMESTAMPTZOID:    return column_type::timestamp_with_tz; 
             case VOIDOID:           return column_type::none;
             default:                throw retrieved_unrecognized_type_exception(type_oid);
         }
