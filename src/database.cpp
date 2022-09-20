@@ -223,11 +223,9 @@ namespace {
             ArrayT text;
             direct_mapper<ArrayT>::from_row(src, text);
             std::stringstream ss(std::string(text).substr(1, std::string(text).size() -2));
-            if(!ss.str().empty())
-            {
+            if(!ss.str().empty()) {
                 IntT num;
-                while(ss >> num)
-                {
+                while(ss >> num) {
                     dest.push_back(num);
                     ss.ignore(1, ',');
                 }
@@ -238,9 +236,8 @@ namespace {
             ArrayT text;
             std::stringstream ss;
             ss << "{";
-            if (!src.empty())
-            {
-                std::copy(std::begin(src),std::end(src)-1, std::ostream_iterator<IntT>(ss, ","));
+            if (!src.empty()) {
+                std::copy(std::begin(src), std::end(src)-1, std::ostream_iterator<IntT>(ss, ","));
                 ss << src.back();
             }
             ss << "}";
