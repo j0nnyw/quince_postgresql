@@ -224,12 +224,14 @@ namespace {
             ArrayT text;
             direct_mapper<ArrayT>::from_row(src, text);
             std::stringstream ss(std::string(text).substr(1, std::string(text).size() -2));
-            while(!(ss.eof() || ss.bad() || ss.fail()))
+            if(!ss.str().empty())
             {
                 IntT num;
-                ss >> num;
-                dest.push_back(num);
-                ss.ignore(1, ',');
+                while(ss >> num)
+                {
+                    dest.push_back(num);
+                    ss.ignore(1, ',');
+                }
             }
         }
 
@@ -237,18 +239,10 @@ namespace {
             ArrayT text;
             std::stringstream ss;
             ss << "{";
-
-            const typename std::vector<IntT>::const_iterator before_last = src.end() -1;
-            for(typename std::vector<IntT>::const_iterator it = src.begin(); it != src.end(); it++)
+            if (!src.empty())
             {
-                if(it != before_last)
-                {
-                    ss << *it << ",";
-                }
-                else
-                {
-                    ss << *it;
-                }
+                std::copy(std::begin(src),std::end(src)-1, std::ostream_iterator<IntT>(ss, ","));
+                ss << src.back();
             }
             ss << "}";
             text = ss.str();
