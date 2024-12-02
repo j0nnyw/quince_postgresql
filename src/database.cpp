@@ -187,7 +187,7 @@ namespace {
             std::stringstream ss;
             ss << std::string(text);
             std::chrono::sys_time<DurationT> time_point;
-            ss >> date::parse("%F %T", time_point);
+            ss >> std::chrono::parse("%F %T", time_point);
             dest = date::make_zoned(time_point);
         }
 
