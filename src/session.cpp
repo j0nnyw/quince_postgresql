@@ -53,6 +53,7 @@ using std::vector;
 #define ARRAYOFINT2OID 1005
 #define ARRAYOFINT4OID 1007
 #define ARRAYOFINT8OID 1016
+#define ARRAYOFSTRINGOID 1009
 
 
 namespace quince_postgresql {
@@ -79,6 +80,7 @@ namespace {
             case column_type::array_of_int16:       return ARRAYOFINT2OID;
             case column_type::array_of_int32:       return ARRAYOFINT4OID;
             case column_type::array_of_int64:       return ARRAYOFINT8OID;
+            case column_type::array_of_string:      return ARRAYOFSTRINGOID;
             case column_type::none:                 return VOIDOID;
             default:                            abort();
         }
@@ -104,7 +106,8 @@ namespace {
             case TIMESTAMPTZOID:    return column_type::timestamp_with_tz;
             case ARRAYOFINT2OID:    return column_type::array_of_int16;
             case ARRAYOFINT4OID:    return column_type::array_of_int32;
-            case ARRAYOFINT8OID:    return column_type::array_of_int64; 
+            case ARRAYOFINT8OID:    return column_type::array_of_int64;
+            case ARRAYOFSTRINGOID:  return column_type::array_of_string;
             case VOIDOID:           return column_type::none;
             default:                throw retrieved_unrecognized_type_exception(type_oid);
         }
@@ -212,7 +215,7 @@ namespace {
             }
             return result;
         }
-    
+
         bool
         bad_no_data() const {
             return PQresultStatus(_pg_result) != PGRES_COMMAND_OK;

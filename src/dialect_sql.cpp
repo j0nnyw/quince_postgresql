@@ -172,8 +172,9 @@ namespace {
     bool
     is_array_column(const column_mapper &c) {
         return maps_to<array_of_int16>(c)
-            || maps_to<array_of_int32>(c)  
-            || maps_to<array_of_int64>(c);
+            || maps_to<array_of_int32>(c)
+            || maps_to<array_of_int64>(c)
+            || maps_to<array_of_string>(c);
     }
 }
 
@@ -300,6 +301,8 @@ dialect_sql::attach_value(const cell &value) {
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else if (value.type() == column_type::array_of_int64)
         sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
+    else if (value.type() == column_type::array_of_string)
+        sql::attach_value(cell(column_type::string, false, value.data(), value.size()));
     else
         sql::attach_value(value);
 }
@@ -322,6 +325,7 @@ dialect_sql::next_value_reference(const cell &value) {
     if (value.type() == column_type::array_of_int16)     result += "::_int2";
     if (value.type() == column_type::array_of_int32)     result += "::_int4";
     if (value.type() == column_type::array_of_int64)     result += "::_int8";
+    if (value.type() == column_type::array_of_string)    result += "::_text";
 
     return result;
 }
