@@ -19,8 +19,9 @@
 #include <quince/mappers/serial_mapper.h>
 #include <quince_postgresql/database.h>
 #include <quince_postgresql/detail/dialect_sql.h>
-#include <sstream>
 #include <chrono>
+#include <sstream>
+#include <type_traits>
 #include <vector>
 
 
@@ -205,40 +206,50 @@ namespace {
         }
     };
 
-    template <typename IntT, typename ArrayT>
-    class array_of_int_mapper : public abstract_mapper<std::vector<IntT>>, public direct_mapper<ArrayT>
+    template <typename T, typename ArrayT>
+    class array_of_mapper : public abstract_mapper<std::vector<T>>, public direct_mapper<ArrayT>
     {
     public:
-        explicit array_of_int_mapper(const optional<string> &name, const mapper_factory &creator) :
+        explicit array_of_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
-            abstract_mapper<std::vector<IntT>>(name),
+            abstract_mapper<std::vector<T>>(name),
             direct_mapper<ArrayT>(name, creator)
         {}
 
         virtual std::unique_ptr<cloneable>
         clone_impl() const override {
-            return quince::make_unique<array_of_int_mapper<IntT,ArrayT>>(*this);
+            return quince::make_unique<array_of_mapper<T,ArrayT>>(*this);
         }
 
-        virtual void from_row(const row &src, std::vector<IntT> &dest) const override {
+        virtual void from_row(const row &src, std::vector<T> &dest) const override {
             ArrayT text;
             direct_mapper<ArrayT>::from_row(src, text);
-            std::stringstream ss(std::string(text).substr(1, std::string(text).size() -2));
-            if(!ss.str().empty()) {
-                IntT num;
-                while(ss >> num) {
-                    dest.push_back(num);
-                    ss.ignore(1, ',');
+            std::stringstream ss(std::string(text).substr(1, std::string(text).size()-2));
+            if (!ss.str().empty()) {
+                T value;
+                if constexpr (std::is_integral_v<T>) {
+                    while (ss >> value) {
+                        dest.push_back(value);
+                        ss.ignore(1, ',');
+                    }
+                }
+                else if constexpr (std::is_same_v<T, std::string>) {
+                    while (getline(ss, value, ',')) {
+                        dest.push_back(value);
+                    }
+                }
+                else {
+                    static_assert( false, "Unsupported type" );
                 }
             }
         }
 
-        virtual void to_row(const std::vector<IntT>& src, row &dest) const override {
+        virtual void to_row(const std::vector<T>& src, row &dest) const override {
             ArrayT text;
             std::stringstream ss;
             ss << "{";
             if (!src.empty()) {
-                std::copy(std::begin(src), std::end(src)-1, std::ostream_iterator<IntT>(ss, ","));
+                std::copy(std::begin(src), std::end(src)-1, std::ostream_iterator<T>(ss, ","));
                 ss << src.back();
             }
             ss << "}";
@@ -248,7 +259,7 @@ namespace {
 
     protected:
         virtual void build_match_tester(const query_base &qb, predicate &result) const override {
-            abstract_mapper<std::vector<IntT>>::build_match_tester(qb, result);
+            abstract_mapper<std::vector<T>>::build_match_tester(qb, result);
         }
     };
 
@@ -276,9 +287,10 @@ namespace {
             customize<cpp_dec_float_100, numeric_mapper>();
             customize<zoned_time<std::chrono::milliseconds>, timestamp_with_tz_mapper<std::chrono::milliseconds>>();
             customize<zoned_time<std::chrono::microseconds>, timestamp_with_tz_mapper<std::chrono::microseconds>>();
-            customize<std::vector<std::int16_t>, array_of_int_mapper<std::int16_t, array_of_int16>>();
-            customize<std::vector<std::int32_t>, array_of_int_mapper<std::int32_t, array_of_int32>>();
-            customize<std::vector<std::int64_t>, array_of_int_mapper<std::int64_t, array_of_int64>>();
+            customize<std::vector<std::int16_t>, array_of_mapper<std::int16_t, array_of_int16>>();
+            customize<std::vector<std::int32_t>, array_of_mapper<std::int32_t, array_of_int32>>();
+            customize<std::vector<std::int64_t>, array_of_mapper<std::int64_t, array_of_int64>>();
+            customize<std::vector<std::string>, array_of_mapper<std::string, array_of_string>>();
         }
     };
 
@@ -410,6 +422,7 @@ database::column_type_name(column_type type) const {
         case column_type::array_of_int16:       return "smallint[]";
         case column_type::array_of_int32:       return "integer[]";
         case column_type::array_of_int64:       return "bigint[]";
+        case column_type::array_of_string:      return "text[]";
         default:                                abort();
     }
 }

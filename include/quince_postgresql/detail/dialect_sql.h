@@ -57,14 +57,14 @@ public:
         const quince::binomen &table,
         const quince::abstract_mapper_base &
     ) override;
-    
+
     virtual void
     write_rename_column(
         const quince::binomen &table,
         const std::string &before,
         const std::string &after
     ) override;
-    
+
     virtual void
     write_set_columns_types(
         const quince::binomen &table,
