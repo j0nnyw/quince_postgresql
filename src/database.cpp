@@ -46,6 +46,10 @@ namespace {
     class ptime_mapper : public abstract_mapper<ptime>, public direct_mapper<timestamp>
     {
     public:
+        using direct_mapper<timestamp>::to_row;
+        using direct_mapper<timestamp>::from_row;
+
+    public:
         explicit ptime_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
             abstract_mapper<ptime>(name),
@@ -76,6 +80,10 @@ namespace {
 
     class time_mapper : public abstract_mapper<time_duration>, public direct_mapper<time_type>
     {
+    public:
+        using direct_mapper<time_type>::to_row;
+        using direct_mapper<time_type>::from_row;
+
     public:
         explicit time_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
@@ -108,6 +116,10 @@ namespace {
     class date_mapper : public abstract_mapper<boost::gregorian::date>, public direct_mapper<date_type>
     {
     public:
+        using direct_mapper<date_type>::to_row;
+        using direct_mapper<date_type>::from_row;
+
+    public:
         explicit date_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
             abstract_mapper<boost::gregorian::date>(name),
@@ -138,6 +150,10 @@ namespace {
 
     class numeric_mapper : public abstract_mapper<cpp_dec_float_100>, public direct_mapper<numeric_type>
     {
+    public:
+        using direct_mapper<numeric_type>::to_row;
+        using direct_mapper<numeric_type>::from_row;
+
     public:
         explicit numeric_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
@@ -170,6 +186,10 @@ namespace {
     template <typename DurationT>
     class timestamp_with_tz_mapper : public abstract_mapper<zoned_time<DurationT>>, public direct_mapper<timestamp_with_tz>
     {
+    public:
+        using direct_mapper<timestamp_with_tz>::to_row;
+        using direct_mapper<timestamp_with_tz>::from_row;
+
     public:
         explicit timestamp_with_tz_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
@@ -209,6 +229,10 @@ namespace {
     template <typename T, typename ArrayT>
     class array_of_mapper : public abstract_mapper<std::vector<T>>, public direct_mapper<ArrayT>
     {
+    public:
+        using direct_mapper<ArrayT>::to_row;
+        using direct_mapper<ArrayT>::from_row;
+
     public:
         explicit array_of_mapper(const optional<string> &name, const mapper_factory &creator) :
             abstract_mapper_base(name),
@@ -263,7 +287,7 @@ namespace {
         }
     };
 
-    struct customization_for_dbms : mapping_customization {
+    struct customization_for_dbms final : mapping_customization {
         customization_for_dbms() {
             customize<bool, direct_mapper<bool>>();
             customize<int16_t, direct_mapper<int16_t>>();
@@ -291,6 +315,13 @@ namespace {
             customize<std::vector<std::int32_t>, array_of_mapper<std::int32_t, array_of_int32>>();
             customize<std::vector<std::int64_t>, array_of_mapper<std::int64_t, array_of_int64>>();
             customize<std::vector<std::string>, array_of_mapper<std::string, array_of_string>>();
+        }
+
+        ~customization_for_dbms() override = default;
+
+        virtual std::unique_ptr<cloneable>
+        clone_impl() const override {
+            return quince::make_unique<customization_for_dbms>(*this);
         }
     };
 
