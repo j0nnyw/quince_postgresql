@@ -191,7 +191,7 @@ dialect_sql::write_cast_select_list_item(const column_mapper &c) {
 
 void
 dialect_sql::write_select_list_item(const column_mapper &c) {
-    if ((is_timestamp_column(c) || is_time_column(c) || is_date_column(c) || is_numeric_column(c)) || is_array_column(c) && !nested_select())
+    if ((is_timestamp_column(c) || is_time_column(c) || is_date_column(c) || is_numeric_column(c)) || (is_array_column(c) && !nested_select()))
         write_cast_select_list_item(c);
     else
         sql::write_select_list_item(c);
